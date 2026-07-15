@@ -43,6 +43,27 @@ def _extract_page_id(payload):
     return page_id
 
 
+def _find_page_object(node):
+    """Notion's webhook payload embeds a resolved snapshot of the page
+    (data.properties) that already has relation-based formulas computed.
+    A fresh pages.retrieve call can return null for those same formulas
+    (observed on the classic 2022-06-28 API version), so prefer this
+    embedded snapshot over re-fetching when it's present."""
+    if isinstance(node, dict):
+        if node.get("object") == "page" and isinstance(node.get("properties"), dict):
+            return node
+        for value in node.values():
+            found = _find_page_object(value)
+            if found:
+                return found
+    elif isinstance(node, list):
+        for item in node:
+            found = _find_page_object(item)
+            if found:
+                return found
+    return None
+
+
 def _check_shared_secret(headers):
     expected = os.environ.get("WEBHOOK_SHARED_SECRET")
     if not expected:
@@ -70,7 +91,7 @@ def genera_preventivo(payload, headers):
     _check_shared_secret(headers)
     page_id = _extract_page_id(payload)
 
-    page = notion_client.get_page(page_id)
+    page = _find_page_object(payload) or notion_client.get_page(page_id)
     props = page.get("properties", {})
 
     raw_by_name = {name: notion_props.property_value(props.get(name)) for name in REQUIRED_PROPERTIES}
@@ -105,8 +126,6 @@ class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         length = int(self.headers.get("Content-Length", 0))
         raw_body = self.rfile.read(length) if length else b"{}"
-        print(f"DEBUG headers={dict(self.headers.items())}")
-        print(f"DEBUG raw_body={raw_body!r}")
         try:
             payload = json.loads(raw_body or b"{}")
         except json.JSONDecodeError:
@@ -119,7 +138,7 @@ class handler(BaseHTTPRequestHandler):
         except PermissionError as exc:
             self._respond(401, {"ok": False, "error": str(exc)})
         except ValueError as exc:
-            self._respond(400, {"ok": False, "error": str(exc), "payload_received": payload})
+            self._respond(400, {"ok": False, "error": str(exc)})
         except Exception as exc:  # noqa: BLE001 - report unexpected errors to caller/logs
             traceback.print_exc()
             self._respond(500, {"ok": False, "error": str(exc)})
