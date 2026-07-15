@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import sys
 import traceback
 from http.server import BaseHTTPRequestHandler
@@ -9,22 +10,44 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from lib import drive_client, docs_client, notion_client, notion_props
 from lib.mapping import PLACEHOLDER_MAP, REQUIRED_PROPERTIES
 
+UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$", re.IGNORECASE
+)
+
+
+def _find_id_recursive(node, preferred_keys=("page_id", "id", "pageId")):
+    """Notion's native 'Send webhook' payload shape isn't officially documented,
+    so walk the JSON looking for a UUID-looking value, preferring keys named
+    like an id."""
+    if isinstance(node, dict):
+        for key in preferred_keys:
+            value = node.get(key)
+            if isinstance(value, str) and UUID_RE.match(value):
+                return value
+        for value in node.values():
+            found = _find_id_recursive(value, preferred_keys)
+            if found:
+                return found
+    elif isinstance(node, list):
+        for item in node:
+            found = _find_id_recursive(item, preferred_keys)
+            if found:
+                return found
+    return None
+
 
 def _extract_page_id(payload):
-    for key in ("page_id", "id"):
-        if payload.get(key):
-            return payload[key]
-    data = payload.get("data") or {}
-    if data.get("id"):
-        return data["id"]
-    raise ValueError("page_id non trovato nel body del webhook")
+    page_id = _find_id_recursive(payload)
+    if not page_id:
+        raise ValueError("page_id non trovato nel body del webhook")
+    return page_id
 
 
-def _check_shared_secret(payload):
+def _check_shared_secret(headers):
     expected = os.environ.get("WEBHOOK_SHARED_SECRET")
     if not expected:
         return
-    if payload.get("secret") != expected:
+    if headers.get("X-Webhook-Secret") != expected:
         raise PermissionError("secret webhook non valido")
 
 
@@ -43,8 +66,8 @@ def _validate_required(values_by_notion_prop_name):
         raise ValueError(f"Campi obbligatori mancanti: {', '.join(missing)}")
 
 
-def genera_preventivo(payload):
-    _check_shared_secret(payload)
+def genera_preventivo(payload, headers):
+    _check_shared_secret(headers)
     page_id = _extract_page_id(payload)
 
     page = notion_client.get_page(page_id)
@@ -89,7 +112,7 @@ class handler(BaseHTTPRequestHandler):
             return
 
         try:
-            result = genera_preventivo(payload)
+            result = genera_preventivo(payload, self.headers)
             self._respond(200, result)
         except PermissionError as exc:
             self._respond(401, {"ok": False, "error": str(exc)})
