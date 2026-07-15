@@ -16,13 +16,17 @@ def _service():
 def copy_template(template_id, new_name, folder_id):
     service = _service()
     body = {"name": new_name, "parents": [folder_id]}
-    copied = service.files().copy(fileId=template_id, body=body, fields="id, webViewLink").execute()
+    copied = (
+        service.files()
+        .copy(fileId=template_id, body=body, fields="id, webViewLink", supportsAllDrives=True)
+        .execute()
+    )
     return copied["id"], copied["webViewLink"]
 
 
 def get_web_view_link(file_id):
     service = _service()
-    meta = service.files().get(fileId=file_id, fields="webViewLink").execute()
+    meta = service.files().get(fileId=file_id, fields="webViewLink", supportsAllDrives=True).execute()
     return meta["webViewLink"]
 
 
@@ -42,5 +46,9 @@ def export_pdf_and_upload(doc_id, pdf_name, folder_id):
 
     media = MediaIoBaseUpload(buffer, mimetype=PDF_MIME, resumable=False)
     body = {"name": pdf_name, "parents": [folder_id]}
-    uploaded = service.files().create(body=body, media_body=media, fields="id, webViewLink").execute()
+    uploaded = (
+        service.files()
+        .create(body=body, media_body=media, fields="id, webViewLink", supportsAllDrives=True)
+        .execute()
+    )
     return uploaded["id"], uploaded["webViewLink"]
