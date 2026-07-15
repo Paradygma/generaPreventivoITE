@@ -1,2 +1,12 @@
+[project]
+name = "genera-preventivo-ite"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "requests==2.32.3",
+    "google-api-python-client==2.149.0",
+    "google-auth==2.35.0",
+]
+
 [tool.vercel]
 entrypoint = "api.genera_preventivo:handler"
