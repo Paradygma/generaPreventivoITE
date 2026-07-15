@@ -20,7 +20,7 @@ def as_date_it(value):
 
 def as_euro(value):
     """Number -> '1.234,56 €' (Italian thousands/decimal separators)."""
-    if value is None:
+    if value is None or value == "":
         return ""
     formatted = f"{float(value):,.2f}"
     formatted = formatted.replace(",", "_").replace(".", ",").replace("_", ".")
@@ -28,7 +28,7 @@ def as_euro(value):
 
 
 def as_number(value):
-    if value is None:
+    if value is None or value == "":
         return ""
     if float(value).is_integer():
         return str(int(value))
