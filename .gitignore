@@ -2,3 +2,7 @@
 __pycache__/
 *.pyc
 .vercel/
+
+# Google service account keys — never commit
+*.json
+!vercel.json

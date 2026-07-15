@@ -1,7 +1,1 @@
-{
-  "functions": {
-    "api/genera_preventivo.py": {
-      "runtime": "python3.12"
-    }
-  }
-}
+{}
