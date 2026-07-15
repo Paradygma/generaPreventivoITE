@@ -10,7 +10,7 @@ PDF_MIME = "application/pdf"
 
 
 def _service():
-    return build("drive", "v3", credentials=get_credentials(), cacheDiscovery=False)
+    return build("drive", "v3", credentials=get_credentials())
 
 
 def copy_template(template_id, new_name, folder_id):

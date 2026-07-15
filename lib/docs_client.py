@@ -4,7 +4,7 @@ from lib.google_auth import get_credentials
 
 
 def _service():
-    return build("docs", "v1", credentials=get_credentials(), cacheDiscovery=False)
+    return build("docs", "v1", credentials=get_credentials())
 
 
 def replace_placeholders(doc_id, values_by_placeholder):
