@@ -105,10 +105,12 @@ class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         length = int(self.headers.get("Content-Length", 0))
         raw_body = self.rfile.read(length) if length else b"{}"
+        print(f"DEBUG headers={dict(self.headers.items())}")
+        print(f"DEBUG raw_body={raw_body!r}")
         try:
             payload = json.loads(raw_body or b"{}")
         except json.JSONDecodeError:
-            self._respond(400, {"ok": False, "error": "body non è JSON valido"})
+            self._respond(400, {"ok": False, "error": "body non è JSON valido", "raw_body": raw_body.decode("utf-8", "replace")})
             return
 
         try:
@@ -117,7 +119,7 @@ class handler(BaseHTTPRequestHandler):
         except PermissionError as exc:
             self._respond(401, {"ok": False, "error": str(exc)})
         except ValueError as exc:
-            self._respond(400, {"ok": False, "error": str(exc)})
+            self._respond(400, {"ok": False, "error": str(exc), "payload_received": payload})
         except Exception as exc:  # noqa: BLE001 - report unexpected errors to caller/logs
             traceback.print_exc()
             self._respond(500, {"ok": False, "error": str(exc)})
