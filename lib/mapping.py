@@ -18,7 +18,7 @@ PLACEHOLDER_MAP = {
     "Descrizione Opportunità": ("Descrizione Opportunità", fmt.as_text),
     "Luogo Destinazione": ("Luogo Destinazione", fmt.as_text),
     "Descrizione Attività": ("Descrizione Attività", fmt.as_text),
-    "Compenso Orario": ("Compenso Orario", fmt.as_euro),
+    "Compenso Orario": ("Tariffa oraria (€/ora)", fmt.as_euro),
     "Ore Stimate": ("Ore Stimate", fmt.as_number),
     "Compenso Comprese Spese": ("Compenso Comprese Spese", fmt.as_euro),
     "Imponibile Totale": ("Imponibile Totale", fmt.as_euro),
