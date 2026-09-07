@@ -8,7 +8,7 @@ from lib import formatters as fmt
 
 # placeholder_text: (notion_property_name, formatter)
 PLACEHOLDER_MAP = {
-    "# Preventivo": ("# Preventivo", fmt.as_text),
+    "# Preventivo": ("# ODA", fmt.as_text),
     "Revisione": ("Revisione", fmt.as_text),
     "Data preventivo": ("Data Preventivo", fmt.as_date_it),
     "Cliente": ("Cliente", fmt.as_text),
@@ -17,7 +17,7 @@ PLACEHOLDER_MAP = {
     "Contatto": ("Contatto", fmt.as_text),
     "Descrizione Opportunità": ("Descrizione Opportunità", fmt.as_text),
     "Luogo Destinazione": ("Luogo Destinazione", fmt.as_text),
-    "Descrizione Attività": ("Descrizione Attività", fmt.as_text),
+    "Descrizione Attività": ("Descrizione Attivtà", fmt.as_text),
     "Compenso Orario": ("Tariffa oraria (€/ora)", fmt.as_euro),
     "Ore Stimate": ("Ore Stimate", fmt.as_number),
     "Compenso Comprese Spese": ("Compenso Comprese Spese", fmt.as_euro),
@@ -36,6 +36,6 @@ PLACEHOLDER_MAP = {
 # Fields that must be non-empty before generating the document.
 REQUIRED_PROPERTIES = [
     "Cliente",
-    "Descrizione Attività",
+    "Descrizione Attivtà",
     "Totale Preventivo",
 ]
