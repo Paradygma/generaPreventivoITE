@@ -1,6 +1,7 @@
 from googleapiclient.discovery import build
 
 from lib.google_auth import get_credentials
+from lib.logging_utils import log, log_error
 
 
 def _service():
@@ -24,7 +25,12 @@ def replace_placeholders(doc_id, values_by_placeholder):
             }
         )
 
-    service = _service()
-    service.documents().batchUpdate(
-        documentId=doc_id, body={"requests": requests_batch}
-    ).execute()
+    try:
+        service = _service()
+        service.documents().batchUpdate(
+            documentId=doc_id, body={"requests": requests_batch}
+        ).execute()
+        log("docs_replace_placeholders_ok", doc_id=doc_id, placeholders=len(requests_batch))
+    except Exception as exc:
+        log_error("docs_replace_placeholders_failed", exc, doc_id=doc_id)
+        raise
