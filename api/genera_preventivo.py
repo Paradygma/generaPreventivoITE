@@ -93,18 +93,43 @@ def _validate_required(values_by_notion_prop_name):
     log("required_validation_ok")
 
 
+def _formula_is_null(prop):
+    """True if prop is an unresolved formula (the classic 2022-06-28 API bug:
+    relation-based formulas can come back null on a fresh pages.retrieve)."""
+    if not prop or prop.get("type") != "formula":
+        return False
+    formula = prop.get("formula", {})
+    ftype = formula.get("type")
+    return formula.get(ftype) is None
+
+
+def _merge_page_properties(api_page, embedded_page):
+    """Live API data is the source of truth (Notion's webhook snapshot has been
+    observed serving a stale/cached page state for plain properties). The one
+    exception is relation-based formulas, which the classic API can null out on
+    a fresh retrieve - for those specifically, fall back to the embedded
+    snapshot's value if the live one is null."""
+    if not embedded_page:
+        return api_page
+    api_props = api_page.get("properties", {})
+    embedded_props = embedded_page.get("properties", {})
+    for name, embedded_prop in embedded_props.items():
+        api_prop = api_props.get(name)
+        if _formula_is_null(api_prop) and not _formula_is_null(embedded_prop):
+            log("formula_backfilled_from_webhook_snapshot", property=name)
+            api_props[name] = embedded_prop
+    return api_page
+
+
 def genera_preventivo(payload, headers):
     _check_shared_secret(headers)
     page_id = _extract_page_id(payload)
     log("page_id_extracted", page_id=page_id)
 
+    log("fetching_page_from_notion_api", page_id=page_id)
+    page = notion_client.get_page(page_id)
     embedded_page = _find_page_object(payload)
-    if embedded_page:
-        log("using_embedded_page_snapshot", page_id=page_id)
-        page = embedded_page
-    else:
-        log("fetching_page_from_notion_api", page_id=page_id)
-        page = notion_client.get_page(page_id)
+    page = _merge_page_properties(page, embedded_page)
     props = page.get("properties", {})
 
     raw_by_name = {name: notion_props.property_value(props.get(name)) for name in REQUIRED_PROPERTIES}
