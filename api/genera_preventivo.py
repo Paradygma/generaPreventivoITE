@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from lib import drive_client, docs_client, notion_client, notion_props
 from lib.logging_utils import log, log_error
-from lib.mapping import PLACEHOLDER_MAP, REQUIRED_PROPERTIES
+from lib.mapping import PLACEHOLDER_MAP, REQUIRED_PROPERTIES, TEMPLATE_ENV_BY_TIPO_ODA
 
 UUID_RE = re.compile(
     r"^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$", re.IGNORECASE
@@ -121,6 +121,17 @@ def _merge_page_properties(api_page, embedded_page):
     return api_page
 
 
+def _pick_template_id(props):
+    tipo_oda = notion_props.property_value(props.get("Tipo ODA"))
+    env_var = TEMPLATE_ENV_BY_TIPO_ODA.get(tipo_oda)
+    if not env_var:
+        log("tipo_oda_not_recognized", tipo_oda=tipo_oda)
+        raise ValueError(f"Tipo ODA non riconosciuto: {tipo_oda!r}")
+    template_id = os.environ[env_var]
+    log("template_picked", tipo_oda=tipo_oda, env_var=env_var, template_id=template_id)
+    return template_id
+
+
 def genera_preventivo(payload, headers):
     _check_shared_secret(headers)
     page_id = _extract_page_id(payload)
@@ -142,7 +153,7 @@ def genera_preventivo(payload, headers):
     base_name = f"{codice} - {cliente}".strip()
     log("base_name_computed", base_name=base_name)
 
-    template_id = os.environ["TEMPLATE_DOC_ID"]
+    template_id = _pick_template_id(props)
     folder_id = os.environ["DRIVE_OUTPUT_FOLDER_ID"]
 
     log("drive_copy_start", template_id=template_id, folder_id=folder_id)

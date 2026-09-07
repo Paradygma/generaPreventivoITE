@@ -39,3 +39,9 @@ REQUIRED_PROPERTIES = [
     "Descrizione Attivtà",
     "Totale Preventivo",
 ]
+
+# Notion "Tipo ODA" select value -> env var holding that template's Google Doc ID.
+TEMPLATE_ENV_BY_TIPO_ODA = {
+    "Normale": "TEMPLATE_DOC_ID_NORMALE",
+    "AQ": "TEMPLATE_DOC_ID_AQ",
+}
