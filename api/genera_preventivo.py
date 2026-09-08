@@ -119,17 +119,29 @@ def _formula_is_null(prop):
 def _merge_page_properties(api_page, embedded_page):
     """Live API data is the source of truth (Notion's webhook snapshot has been
     observed serving a stale/cached page state for plain properties). The one
-    exception is relation-based formulas, which the classic API can null out on
-    a fresh retrieve - for those specifically, fall back to the embedded
-    snapshot's value if the live one is null."""
+    exception is formulas: the classic API can serve a stale/uncomputed result
+    for relation-based formulas on a fresh retrieve - sometimes null, but also
+    observed silently returning 0 for a currency formula that the Notion UI
+    (which recomputes client-side) shows as non-zero. Since the webhook fires
+    at button-click time with Notion's own resolved snapshot, always prefer it
+    for formula properties over the live API value when it has a value."""
     if not embedded_page:
         return api_page
     api_props = api_page.get("properties", {})
     embedded_props = embedded_page.get("properties", {})
     for name, embedded_prop in embedded_props.items():
         api_prop = api_props.get(name)
-        if _formula_is_null(api_prop) and not _formula_is_null(embedded_prop):
-            log("formula_backfilled_from_webhook_snapshot", property=name)
+        if (
+            embedded_prop
+            and embedded_prop.get("type") == "formula"
+            and not _formula_is_null(embedded_prop)
+            and api_prop != embedded_prop
+        ):
+            log(
+                "formula_backfilled_from_webhook_snapshot",
+                property=name,
+                api_was_null=_formula_is_null(api_prop),
+            )
             api_props[name] = embedded_prop
     return api_page
 
