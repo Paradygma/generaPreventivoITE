@@ -79,10 +79,12 @@ def _check_shared_secret(headers):
 def _build_values(page):
     props = page.get("properties", {})
     values = {}
+    raw_debug = {}
     for placeholder, (notion_prop_name, formatter) in PLACEHOLDER_MAP.items():
         raw = notion_props.property_value(props.get(notion_prop_name))
+        raw_debug[notion_prop_name] = raw
         values[placeholder] = formatter(raw)
-    log("values_built", placeholders=len(values))
+    log("values_built", placeholders=len(values), raw=raw_debug, formatted=values)
     return values
 
 
