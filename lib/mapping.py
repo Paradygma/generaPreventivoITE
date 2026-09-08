@@ -38,7 +38,7 @@ PLACEHOLDER_MAP = {
 REQUIRED_PROPERTIES = [
     "Cliente",
     "Descrizione Attivtà",
-    "Totale Preventivo",
+    "TOTALE Compenso (IVA Inclusa)",
 ]
 
 # Notion "Tipo ODA" select value -> env var holding that template's Google Doc ID.
