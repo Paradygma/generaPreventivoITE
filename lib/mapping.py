@@ -23,7 +23,7 @@ PLACEHOLDER_MAP = {
     "Cassa4%": ("Cassa 4%", fmt.as_euro),
     "iva22%": ("IVA 22%", fmt.as_euro),
     "Imponibile Totale": ("Imponibile totale", fmt.as_euro),
-    "Totale Compenso (iva inclusa)": ("TOTALE Compenso (IVA Inclusa)", fmt.as_euro),
+    "Totale Compenso (iva inclusa)": ("Totale Compenso (IVA Inclusa)", fmt.as_euro),
     "Consegna Elaborati": ("Consegna Elaborati", fmt.as_text),
     "Modalità Consegna": ("Modalità Consegna", fmt.as_text),
     "Condizioni Pagamento Descrizione": ("Condizioni Pagamento Descrizione", fmt.as_text),
@@ -38,7 +38,7 @@ PLACEHOLDER_MAP = {
 REQUIRED_PROPERTIES = [
     "Cliente",
     "Descrizione Attivtà",
-    "TOTALE Compenso (IVA Inclusa)",
+    "Totale Compenso (IVA Inclusa)",
 ]
 
 # Notion "Tipo ODA" select value -> env var holding that template's Google Doc ID.
