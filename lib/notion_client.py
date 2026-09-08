@@ -58,3 +58,24 @@ def update_page_urls(page_id, doc_url=None, pdf_url=None):
     except Exception as exc:
         log_error("notion_update_page_urls_failed", exc, page_id=page_id)
         raise
+
+
+def update_page_log(page_id, message):
+    """Write a human-readable status message to the "Log Genera Preventivo"
+    property, so a non-technical user can see why the button failed without
+    needing Vercel log access."""
+    message = message[:2000]  # Notion rich_text block content limit
+    try:
+        resp = requests.patch(
+            f"{BASE_URL}/pages/{page_id}",
+            headers=_headers(),
+            json={"properties": {"Log Genera Preventivo": {"rich_text": [{"text": {"content": message}}]}}},
+            timeout=15,
+        )
+        if not resp.ok:
+            raise NotionError(f"PATCH page {page_id} log failed: {resp.status_code} {resp.text}")
+        log("notion_update_page_log_ok", page_id=page_id)
+        return resp.json()
+    except Exception as exc:
+        log_error("notion_update_page_log_failed", exc, page_id=page_id)
+        raise

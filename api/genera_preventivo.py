@@ -2,6 +2,7 @@ import json
 import os
 import re
 import sys
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -85,8 +86,18 @@ def _build_values(page):
     return values
 
 
+def _is_missing(value):
+    """0 is a valid required value (e.g. a legitimately free ODA); only None
+    and blank strings count as missing."""
+    if value is None:
+        return True
+    if isinstance(value, str) and value.strip() == "":
+        return True
+    return False
+
+
 def _validate_required(values_by_notion_prop_name):
-    missing = [name for name in REQUIRED_PROPERTIES if not values_by_notion_prop_name.get(name)]
+    missing = [name for name in REQUIRED_PROPERTIES if _is_missing(values_by_notion_prop_name.get(name))]
     if missing:
         log("required_validation_failed", missing=missing, values=values_by_notion_prop_name)
         raise ValueError(f"Campi obbligatori mancanti: {', '.join(missing)}")
@@ -119,6 +130,20 @@ def _merge_page_properties(api_page, embedded_page):
             log("formula_backfilled_from_webhook_snapshot", property=name)
             api_props[name] = embedded_prop
     return api_page
+
+
+def _now_it():
+    return datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M UTC")
+
+
+def _log_to_notion(page_id, message):
+    """Best-effort: never let a logging failure mask the original error."""
+    if not page_id:
+        return
+    try:
+        notion_client.update_page_log(page_id, message)
+    except Exception as exc:  # noqa: BLE001
+        log_error("log_to_notion_failed", exc, page_id=page_id)
 
 
 def _pick_template_id(props):
@@ -173,6 +198,7 @@ def genera_preventivo(payload, headers):
     log("notion_patch_done", page_id=page_id)
 
     log("genera_preventivo_ok", page_id=page_id, doc_id=doc_id, pdf_id=pdf_id)
+    _log_to_notion(page_id, f"✅ Preventivo generato il {_now_it()}. Doc: {doc_link} — PDF: {pdf_link}")
     return {
         "ok": True,
         "page_id": page_id,
@@ -197,16 +223,24 @@ class handler(BaseHTTPRequestHandler):
             return
 
         try:
+            page_id_for_log = _extract_page_id(payload)
+        except Exception:  # noqa: BLE001 - best-effort, only used to target the Notion log write
+            page_id_for_log = None
+
+        try:
             result = genera_preventivo(payload, self.headers)
             self._respond(200, result)
         except PermissionError as exc:
             log_error("request_failed_401", exc)
+            _log_to_notion(page_id_for_log, f"❌ Generazione fallita il {_now_it()}: {exc}")
             self._respond(401, {"ok": False, "error": str(exc)})
         except ValueError as exc:
             log_error("request_failed_400", exc)
+            _log_to_notion(page_id_for_log, f"❌ Generazione fallita il {_now_it()}: {exc}")
             self._respond(400, {"ok": False, "error": str(exc)})
         except Exception as exc:  # noqa: BLE001 - report unexpected errors to caller/logs
             log_error("request_failed_500", exc)
+            _log_to_notion(page_id_for_log, f"❌ Errore imprevisto il {_now_it()}: {exc}")
             self._respond(500, {"ok": False, "error": str(exc)})
 
     def _respond(self, status, body):
