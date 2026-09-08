@@ -148,9 +148,9 @@ def genera_preventivo(payload, headers):
 
     values = _build_values(page)
 
-    codice = values.get("# Preventivo") or "SN"
+    codice_oda = notion_props.property_value(props.get("ODA")) or "SN"
     cliente = values.get("Cliente") or "Cliente"
-    base_name = f"{codice} - {cliente}".strip()
+    base_name = f"{codice_oda} - {cliente}".strip()
     log("base_name_computed", base_name=base_name)
 
     template_id = _pick_template_id(props)
