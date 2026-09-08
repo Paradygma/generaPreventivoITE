@@ -2,6 +2,7 @@ import json
 import os
 import re
 import sys
+import time
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler
 
@@ -129,6 +130,13 @@ def _merge_page_properties(api_page, embedded_page):
         return api_page
     api_props = api_page.get("properties", {})
     embedded_props = embedded_page.get("properties", {})
+    watch = ["Compenso Comprese Spese", "Imponibile totale", "Totale Compenso (IVA Inclusa)", "Ore Produzione Stimate"]
+    log(
+        "formula_debug_embedded_snapshot",
+        embedded_has=[n for n in watch if n in embedded_props],
+        embedded_missing=[n for n in watch if n not in embedded_props],
+        embedded_raw={n: embedded_props.get(n) for n in watch if n in embedded_props},
+    )
     for name, embedded_prop in embedded_props.items():
         api_prop = api_props.get(name)
         if (
