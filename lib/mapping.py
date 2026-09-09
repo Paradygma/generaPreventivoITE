@@ -19,6 +19,8 @@ PLACEHOLDER_MAP = {
     "Luogo Destinazione": ("Luogo Destinazione", fmt.as_text),
     "Descrizione Attività": ("Descrizione Attivtà", fmt.as_text),
     "Ore Produzione Stimate": ("Ore Produzione Stimate", fmt.as_number),
+    # AQ-only: template's compenso-orario sentence, no-op on the Normale template
+    "Tariffa oraria": ("Tariffa Oraria AQ", fmt.as_euro),
     "Compenso Comprese Spese": ("Compenso Comprese Spese", fmt.as_euro),
     "Cassa 4%": ("Cassa 4%", fmt.as_euro),
     "iva 22%": ("IVA 22%", fmt.as_euro),

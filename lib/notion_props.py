@@ -19,6 +19,22 @@ def _formula_value(formula):
     return ""
 
 
+def _rollup_value(rollup):
+    rtype = rollup.get("type")
+    if rtype == "number":
+        return rollup.get("number")
+    if rtype == "date":
+        date_obj = rollup.get("date")
+        return date_obj.get("start") if date_obj else ""
+    if rtype == "array":
+        items = rollup.get("array") or []
+        if not items:
+            return None
+        # "limit: 1" relations resolve to a single-item rollup - use that item.
+        return property_value(items[0])
+    return None
+
+
 def property_value(prop):
     """Return the raw python value of a Notion property (str/float/None/dict)."""
     if prop is None:
@@ -43,6 +59,8 @@ def property_value(prop):
         return d.get("start") if d else ""
     if ptype == "formula":
         return _formula_value(prop.get("formula", {}))
+    if ptype == "rollup":
+        return _rollup_value(prop.get("rollup", {}))
     if ptype == "url":
         return prop.get("url") or ""
     if ptype == "checkbox":

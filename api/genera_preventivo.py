@@ -107,48 +107,46 @@ def _validate_required(values_by_notion_prop_name):
     log("required_validation_ok")
 
 
-def _formula_is_null(prop):
-    """True if prop is an unresolved formula (the classic 2022-06-28 API bug:
-    relation-based formulas can come back null on a fresh pages.retrieve)."""
-    if not prop or prop.get("type") != "formula":
+_COMPUTED_PROPERTY_TYPES = ("formula", "rollup")
+
+
+def _computed_value_is_null(prop):
+    """True if prop is an unresolved formula/rollup (the classic 2022-06-28
+    API bug: relation-based computed properties can come back null on a
+    fresh pages.retrieve)."""
+    if not prop or prop.get("type") not in _COMPUTED_PROPERTY_TYPES:
         return False
-    formula = prop.get("formula", {})
-    ftype = formula.get("type")
-    return formula.get(ftype) is None
+    computed = prop.get(prop["type"], {})
+    ctype = computed.get("type")
+    return computed.get(ctype) is None
 
 
 def _merge_page_properties(api_page, embedded_page):
     """Live API data is the source of truth (Notion's webhook snapshot has been
     observed serving a stale/cached page state for plain properties). The one
-    exception is formulas: the classic API can serve a stale/uncomputed result
-    for relation-based formulas on a fresh retrieve - sometimes null, but also
-    observed silently returning 0 for a currency formula that the Notion UI
-    (which recomputes client-side) shows as non-zero. Since the webhook fires
-    at button-click time with Notion's own resolved snapshot, always prefer it
-    for formula properties over the live API value when it has a value."""
+    exception is formulas/rollups: the classic API can serve a stale/uncomputed
+    result for relation-based computed properties on a fresh retrieve -
+    sometimes null, but also observed silently returning 0 for a currency
+    formula that the Notion UI (which recomputes client-side) shows as
+    non-zero. Since the webhook fires at button-click time with Notion's own
+    resolved snapshot, always prefer it for formula/rollup properties over the
+    live API value when it has a value."""
     if not embedded_page:
         return api_page
     api_props = api_page.get("properties", {})
     embedded_props = embedded_page.get("properties", {})
-    watch = ["Compenso Comprese Spese", "Imponibile totale", "Totale Compenso (IVA Inclusa)", "Ore Produzione Stimate"]
-    log(
-        "formula_debug_embedded_snapshot",
-        embedded_has=[n for n in watch if n in embedded_props],
-        embedded_missing=[n for n in watch if n not in embedded_props],
-        embedded_raw={n: embedded_props.get(n) for n in watch if n in embedded_props},
-    )
     for name, embedded_prop in embedded_props.items():
         api_prop = api_props.get(name)
         if (
             embedded_prop
-            and embedded_prop.get("type") == "formula"
-            and not _formula_is_null(embedded_prop)
+            and embedded_prop.get("type") in _COMPUTED_PROPERTY_TYPES
+            and not _computed_value_is_null(embedded_prop)
             and api_prop != embedded_prop
         ):
             log(
-                "formula_backfilled_from_webhook_snapshot",
+                "computed_property_backfilled_from_webhook_snapshot",
                 property=name,
-                api_was_null=_formula_is_null(api_prop),
+                api_was_null=_computed_value_is_null(api_prop),
             )
             api_props[name] = embedded_prop
     return api_page
