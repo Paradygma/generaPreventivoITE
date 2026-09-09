@@ -8,7 +8,7 @@ from lib import formatters as fmt
 
 # placeholder_text: (notion_property_name, formatter)
 PLACEHOLDER_MAP = {
-    "# Preventivo": ("# ODA", fmt.as_text),
+    "# Preventivo": ("ODA", fmt.as_text),
     "Revisione": ("Revisione", fmt.as_text),
     "Data preventivo": ("Data Preventivo", fmt.as_date_it),
     "Cliente": ("Cliente", fmt.as_text),
